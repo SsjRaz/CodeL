@@ -1,6 +1,5 @@
 // src/App.tsx
-import React from "react";
-import { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { LightAsync as SyntaxHighlighter } from "react-syntax-highlighter";
 import clsx from "classnames";
 import completeCodeSnippets from "./data/complete-the-code.json";
@@ -30,6 +29,8 @@ interface BugSnippet {
   language: string;
   difficulty: string;
   hint: string;
+  hints?: string[];
+  validFixes?: string[];
   buggyLines: string[];
   bugLineNumber: number;
   fixedLines: string[];
@@ -45,6 +46,29 @@ interface CompleteCodeSnippet {
   lines: string[];
 }
 
+const DIFFICULTY_ORDER: Record<string, number> = {
+  easy: 0,
+  medium: 1,
+  hard: 2,
+};
+
+const BUG_LEVELS: BugSnippet[] = (findBugSnippets as BugSnippet[])
+  .slice()
+  .sort((a, b) => {
+    const rankA =
+      DIFFICULTY_ORDER[a.difficulty?.toLowerCase?.() as keyof typeof DIFFICULTY_ORDER] ??
+      0;
+    const rankB =
+      DIFFICULTY_ORDER[b.difficulty?.toLowerCase?.() as keyof typeof DIFFICULTY_ORDER] ??
+      0;
+    if (rankA !== rankB) return rankA - rankB;
+    return a.id - b.id;
+  })
+  .slice(0, 15);
+
+const TOTAL_BUG_LEVELS = BUG_LEVELS.length;
+const BUG_LEVEL_DISPLAY_TOTAL = Math.max(TOTAL_BUG_LEVELS, 1);
+
 interface BugGuess {
   line: number;
   fix: string;
@@ -54,6 +78,81 @@ interface BugGuess {
 
 function normalizeForComparison(text: string): string {
   return normalizeLine(text).replace(/\s+/g, " ").trim();
+}
+
+function stripAllWhitespace(text: string): string {
+  return text.replace(/\s+/g, "").trim();
+}
+
+function extractReturnExpression(lines: string[]): string | null {
+  for (const raw of lines) {
+    const line = raw.replace(/\s+/g, " ").trim();
+    const match = line.match(/return\s+(.+?);?$/);
+    if (match) {
+      return stripAllWhitespace(match[1]);
+    }
+  }
+  return null;
+}
+
+interface VariableAssignment {
+  name: string;
+  expression: string;
+  sanitizedLine: string;
+}
+
+function extractVariableAssignments(lines: string[]): VariableAssignment[] {
+  const assignments: VariableAssignment[] = [];
+  const assignmentRegex = /^(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(.+?);?$/;
+
+  for (const raw of lines) {
+    const line = raw.replace(/\s+/g, " ").trim();
+    const match = line.match(assignmentRegex);
+    if (match) {
+      assignments.push({
+        name: match[1],
+        expression: stripAllWhitespace(match[2]),
+        sanitizedLine: stripAllWhitespace(normalizeForComparison(raw)),
+      });
+    }
+  }
+
+  return assignments;
+}
+
+function usePrefersDarkMode() {
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const listener = (event: MediaQueryListEvent) => setIsDark(event.matches);
+    media.addEventListener("change", listener);
+    setIsDark(media.matches);
+    return () => media.removeEventListener("change", listener);
+  }, []);
+
+  return isDark;
+}
+
+function buildPalette(isDarkMode: boolean) {
+  return {
+    pageBackground: isDarkMode ? "#0b1120" : "#ffffff",
+    textPrimary: isDarkMode ? "#e2e8f0" : "#111827",
+    textMuted: isDarkMode ? "rgba(226,232,240,0.75)" : "#6b7280",
+    textSecondary: isDarkMode ? "#cbd5f5" : "#374151",
+    border: isDarkMode ? "rgba(148,163,184,0.4)" : "#e5e7eb",
+    surface: isDarkMode ? "#111827" : "#ffffff",
+    surfaceRaised: isDarkMode ? "#0f172a" : "#f8fafc",
+    inputBackground: isDarkMode ? "#0f172a" : "#ffffff",
+    inputText: isDarkMode ? "#e2e8f0" : "#0f172a",
+    inputBorder: isDarkMode ? "rgba(148,163,184,0.6)" : "#cbd5f5",
+    shadow: isDarkMode ? "0 0 0 rgb(0 0 0 / 0)" : "0 10px 20px rgba(15, 23, 42, 0.08)",
+    codeBackground: isDarkMode ? "#0f172a" : "#f8fafc",
+  };
 }
 
 function isFixGuessCorrect(fixGuess: string, snippet: BugSnippet): boolean {
@@ -70,6 +169,16 @@ function isFixGuessCorrect(fixGuess: string, snippet: BugSnippet): boolean {
   if (
     guessLines.length === normalizedTarget.length &&
     guessLines.every((line, idx) => line === normalizedTarget[idx])
+  ) {
+    return true;
+  }
+
+  const strippedGuessLines = guessLines.map(stripAllWhitespace);
+  const strippedTargetLines = normalizedTarget.map(stripAllWhitespace);
+
+  if (
+    strippedGuessLines.length === strippedTargetLines.length &&
+    strippedGuessLines.every((line, idx) => line === strippedTargetLines[idx])
   ) {
     return true;
   }
@@ -102,8 +211,57 @@ function isFixGuessCorrect(fixGuess: string, snippet: BugSnippet): boolean {
     return true;
   }
 
+  const strippedFullTarget = strippedTargetLines.join("");
+  const strippedFullGuess = strippedGuessLines.join("");
+
+  if (
+    strippedFullTarget === strippedFullGuess ||
+    strippedFullTarget.includes(strippedFullGuess) ||
+    strippedFullGuess.includes(strippedFullTarget)
+  ) {
+    return true;
+  }
+
   if (guessLines.length === 1 && fullTarget.includes(guessLines[0])) {
     return true;
+  }
+
+  if (snippet.validFixes?.length) {
+    const sanitizedValidFixes = snippet.validFixes.map((fix) =>
+      stripAllWhitespace(normalizeForComparison(fix))
+    );
+    if (
+      strippedGuessLines.some((line) => sanitizedValidFixes.includes(line)) ||
+      sanitizedValidFixes.includes(strippedFullGuess)
+    ) {
+      return true;
+    }
+  }
+
+  const variableReturnRegex = /^return\s+([A-Za-z_$][\w$]*)\s*;?$/;
+  const targetReturnExpression = extractReturnExpression(snippet.fixedLines);
+  if (targetReturnExpression) {
+    const assignments = extractVariableAssignments(snippet.buggyLines).filter(
+      (assignment) => assignment.expression === targetReturnExpression
+    );
+    if (assignments.length) {
+      const acceptableNames = assignments.map((assignment) => assignment.name);
+      const returnsVariable = guessLines.some((line) => {
+        const match = variableReturnRegex.exec(line);
+        return match ? acceptableNames.includes(match[1]) : false;
+      });
+      if (returnsVariable) {
+        const guessIncludesAssignment = strippedGuessLines.some((line) =>
+          assignments.some(
+            (assignment) => assignment.sanitizedLine === line
+          )
+        );
+        if (!guessIncludesAssignment) {
+          return false;
+        }
+        return true;
+      }
+    }
   }
 
   const lineIndex = Math.max(0, snippet.bugLineNumber - 1);
@@ -115,22 +273,45 @@ function isFixGuessCorrect(fixGuess: string, snippet: BugSnippet): boolean {
 export default function App() {
   // ALL useState hooks MUST be at the top before any conditions
   const [gameMode, setGameMode] = useState<"bug" | "complete" | null>(null);
+  const [bugLevelIndex, setBugLevelIndex] = useState(0);
   const [bugLineInput, setBugLineInput] = useState("");
   const [bugFixInput, setBugFixInput] = useState("");
   const [bugGuesses, setBugGuesses] = useState<BugGuess[]>([]);
+  const [bugHintLevel, setBugHintLevel] = useState(0);
   const [completeInput, setCompleteInput] = useState("");
   const [completeGuesses, setCompleteGuesses] = useState<string[]>([]);
   const [allFeedback, setAllFeedback] = useState<LineFeedback[][]>([]);
-  const [showHint, setShowHint] = useState(false);
+  const [showCompleteHint, setShowCompleteHint] = useState(false);
 
-  // Select snippet based on game mode (for now, always use first one)
-  const bugSnippet: BugSnippet | null = gameMode === "bug" 
-    ? (findBugSnippets as BugSnippet[])[0] 
-    : null;
-  
+  const isDarkMode = usePrefersDarkMode();
+  const palette = useMemo(() => buildPalette(isDarkMode), [isDarkMode]);
+
+  useEffect(() => {
+    document.body.style.background = palette.pageBackground;
+    document.body.style.color = palette.textPrimary;
+    return () => {
+      document.body.style.background = "";
+      document.body.style.color = "";
+    };
+  }, [palette.pageBackground, palette.textPrimary]);
+
+  const clampedBugLevelIndex =
+    TOTAL_BUG_LEVELS > 0
+      ? Math.min(bugLevelIndex, TOTAL_BUG_LEVELS - 1)
+      : 0;
+
+  // Select snippet based on game mode and current level
+  const bugSnippet: BugSnippet | null =
+    gameMode === "bug" && TOTAL_BUG_LEVELS > 0
+      ? BUG_LEVELS[clampedBugLevelIndex]
+      : null;
+
   const target: CompleteCodeSnippet | null = gameMode === "complete"
     ? (completeCodeSnippets as CompleteCodeSnippet[])[0]
     : null;
+
+  const isLastBugLevel =
+    gameMode === "bug" && clampedBugLevelIndex === TOTAL_BUG_LEVELS - 1;
 
   const bugFixHighlights =
     bugSnippet
@@ -145,6 +326,24 @@ export default function App() {
           return acc;
         }, [])
       : [];
+
+  const bugHints: string[] =
+    bugSnippet
+      ? (bugSnippet.hints && bugSnippet.hints.length
+          ? bugSnippet.hints
+          : [
+              bugSnippet.hint,
+              `Focus on line ${bugSnippet.bugLineNumber}.`,
+              bugSnippet.explanation,
+            ]
+        )
+          .map((hint) => hint?.trim())
+          .filter((hint): hint is string => Boolean(hint))
+          .slice(0, 3)
+      : [];
+
+  const displayedBugHints = bugHints.slice(0, bugHintLevel);
+  const canRevealAnotherHint = bugHintLevel < bugHints.length;
 
   const lastFb = allFeedback.at(-1);
   const lastWasAllCorrect =
@@ -221,20 +420,35 @@ export default function App() {
 
   function resetGame() {
     setGameMode(null);
+    setBugLevelIndex(0);
     setBugLineInput("");
     setBugFixInput("");
     setBugGuesses([]);
+    setBugHintLevel(0);
     setCompleteInput("");
     setCompleteGuesses([]);
     setAllFeedback([]);
-    setShowHint(false);
+    setShowCompleteHint(false);
   }
 
   function retryBugMode() {
     setBugLineInput("");
     setBugFixInput("");
     setBugGuesses([]);
-    setShowHint(false);
+    setBugHintLevel(0);
+  }
+
+  function advanceBugLevel() {
+    if (isLastBugLevel) {
+      return;
+    }
+    setBugLevelIndex((prev) =>
+      Math.min(prev + 1, Math.max(TOTAL_BUG_LEVELS - 1, 0))
+    );
+    setBugLineInput("");
+    setBugFixInput("");
+    setBugGuesses([]);
+    setBugHintLevel(0);
   }
 
   // Show homepage if no mode selected - AFTER all hooks
@@ -243,7 +457,14 @@ export default function App() {
   }
 
   return (
-    <div style={{ maxWidth: 960, margin: "32px auto", padding: "0 16px" }}>
+    <div
+      style={{
+        maxWidth: 960,
+        margin: "32px auto",
+        padding: "0 16px",
+        color: palette.textPrimary,
+      }}
+    >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <h1 style={{ fontSize: 28, margin: 0 }}>
           CodeL — {gameMode === "bug" ? "Find the Bug 🐛" : "Complete the Code ✨"}
@@ -252,12 +473,13 @@ export default function App() {
           onClick={resetGame}
           style={{
             background: "transparent",
-            border: "1px solid #d3d6da",
+            border: `1px solid ${palette.border}`,
             borderRadius: 4,
             padding: "6px 12px",
             cursor: "pointer",
             fontSize: 14,
             fontWeight: 600,
+            color: palette.textPrimary,
           }}
         >
           ← Back to Home
@@ -267,7 +489,25 @@ export default function App() {
       {gameMode === "bug" && bugSnippet ? (
         // FIND THE BUG MODE
         <>
-          <p style={{ color: "#6b7280", marginTop: 0 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "baseline",
+              gap: 12,
+              marginBottom: 8,
+              color: "#334155",
+              fontWeight: 600,
+            }}
+          >
+            <span>
+              Level {Math.min(clampedBugLevelIndex + 1, BUG_LEVEL_DISPLAY_TOTAL)} of {BUG_LEVEL_DISPLAY_TOTAL}
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 500 }}>
+              Difficulty: {bugSnippet.difficulty}
+            </span>
+          </div>
+          <p style={{ color: palette.textMuted, marginTop: 0 }}>
             Find the buggy line in <strong>{MAX_TRIES}</strong> tries. Identify which line contains the bug!
           </p>
           <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
@@ -291,8 +531,13 @@ export default function App() {
                     fontSize: 14,
                     padding: 12,
                     borderRadius: 8,
-                    border: "1px solid #e5e7eb",
+                    border: `1px solid ${palette.inputBorder}`,
                     outline: "none",
+                    background: palette.inputBackground,
+                    color: palette.inputText,
+                    boxShadow: isDarkMode
+                      ? "inset 0 0 0 1px rgba(148,163,184,0.15)"
+                      : "inset 0 0 0 1px rgba(15, 23, 42, 0.04)",
                   }}
                 />
                 <label
@@ -308,7 +553,7 @@ export default function App() {
                 <textarea
                   value={bugFixInput}
                   onChange={(e) => setBugFixInput(e.target!.value)}
-                  placeholder={`e.g.\nfor (let i = 0; i < arr.length; i++) {\n  // ...\n}`}
+                  placeholder={`e.g.\nreturn value;`}
                   rows={4}
                   disabled={gameOver}
                   style={{
@@ -316,12 +561,23 @@ export default function App() {
                     fontFamily:
                       "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
                     fontSize: 14,
-                    padding: 12,
+                    padding: "12px 14px",
                     borderRadius: 8,
-                    border: "1px solid #e5e7eb",
+                    border: `1px solid ${palette.inputBorder}`,
                     outline: "none",
                     resize: "vertical",
+                    background: palette.inputBackground,
+                    color: palette.inputText,
+                    boxShadow: isDarkMode
+                      ? "inset 0 0 0 1px rgba(148,163,184,0.15)"
+                      : "inset 0 0 0 1px rgba(15, 23, 42, 0.04)",
+                    lineHeight: 1.5,
                   }}
+                  spellCheck={false}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  wrap="off"
                 />
                 <div style={{ marginTop: 8, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                   <button
@@ -352,39 +608,71 @@ export default function App() {
                   >
                     Submit guess
                   </button>
-                  <span style={{ color: "#6b7280" }}>
+                  <span style={{ color: palette.textMuted }}>
                     Tries left: {Math.max(0, MAX_TRIES - bugGuesses.length)}
                   </span>
                   <button
                     type="button"
-                    onClick={() => setShowHint(!showHint)}
+                    onClick={() =>
+                      setBugHintLevel((prev) =>
+                        canRevealAnotherHint ? prev + 1 : prev
+                      )
+                    }
                     style={{
                       background: "transparent",
                       border: "1px solid #eab308",
-                      color: "#eab308",
+                      color: canRevealAnotherHint ? "#eab308" : "#9ca3af",
                       padding: "8px 14px",
                       borderRadius: 8,
-                      cursor: "pointer",
+                      cursor: canRevealAnotherHint ? "pointer" : "not-allowed",
                       fontWeight: 600,
                     }}
+                    disabled={!canRevealAnotherHint}
                   >
-                    {showHint ? "Hide Hint" : "Show Hint"}
+                    {bugHints.length === 0
+                      ? "No hints available"
+                      : canRevealAnotherHint
+                      ? `Reveal Hint ${bugHintLevel + 1}`
+                      : "All hints shown"}
                   </button>
+                  {bugHintLevel > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setBugHintLevel(0)}
+                      style={{
+                        background: "transparent",
+                        border: "1px solid #9ca3af",
+                        color: "#4b5563",
+                        padding: "8px 14px",
+                        borderRadius: 8,
+                        cursor: "pointer",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Hide hints
+                    </button>
+                  )}
                 </div>
               </form>
 
-              {showHint && (
+              {displayedBugHints.length > 0 && (
                 <div
                   style={{
                     marginTop: 12,
                     padding: 12,
-                    background: "rgba(234,179,8,0.1)",
+                    background: isDarkMode ? "rgba(234,179,8,0.18)" : "rgba(234,179,8,0.08)",
                     border: "1px solid #eab308",
-                    borderRadius: 8,
+                    borderRadius: 10,
                     color: "#854d0e",
+                    display: "grid",
+                    gap: 8,
                   }}
                 >
-                  💡 <strong>Hint:</strong> {bugSnippet.hint}
+                  {displayedBugHints.map((hint, idx) => (
+                    <div key={idx}>
+                      <strong>Hint {idx + 1}:</strong> {hint}
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -426,11 +714,11 @@ export default function App() {
                         style={{
                           marginTop: 6,
                           fontSize: 13,
-                          color: "#374151",
-                          border: "1px solid #e5e7eb",
+                          color: palette.textSecondary,
+                          border: `1px solid ${palette.border}`,
                           borderRadius: 6,
                           padding: "8px 10px",
-                          background: "#ffffff",
+                          background: palette.surface,
                         }}
                       >
                         <div style={{ marginBottom: 4 }}>
@@ -469,12 +757,12 @@ export default function App() {
                   top: 0,
                   bottom: 0,
                   width: 30,
-                  background: "#f3f4f6",
-                  borderRight: "1px solid #e5e7eb",
+                  background: isDarkMode ? "rgba(30,41,59,0.85)" : "#f3f4f6",
+                  borderRight: `1px solid ${palette.border}`,
                   padding: "10px 5px",
                   fontFamily: "monospace",
                   fontSize: 12,
-                  color: "#6b7280",
+                  color: palette.textMuted,
                   lineHeight: 1.5,
                   overflow: "hidden",
                 }}
@@ -490,10 +778,10 @@ export default function App() {
                   language={bugSnippet.language}
                   wrapLongLines
                   customStyle={{
-                    background: "transparent",
+                    background: isDarkMode ? "rgba(15,23,42,0.6)" : "transparent",
                     padding: 0,
                     margin: 0,
-                    color: "#000000",
+                    color: palette.textPrimary,
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",
                     maxHeight: 400,
@@ -501,7 +789,7 @@ export default function App() {
                   }}
                   codeTagProps={{
                     style: {
-                      color: "#000000",
+                      color: palette.textPrimary,
                     },
                   }}
                 >
@@ -539,14 +827,14 @@ export default function App() {
                 >
                   {won ? "🎉 Nicely done!" : "❌ Out of tries"}
                 </div>
-                <div style={{ marginTop: 12, fontSize: 14, color: "#1f2937" }}>
+                <div style={{ marginTop: 12, fontSize: 14, color: palette.textSecondary }}>
                   <strong>Bug location:</strong> Line {bugSnippet.bugLineNumber}
                 </div>
-                <div style={{ marginTop: 8, fontSize: 14, color: "#1f2937" }}>
+                <div style={{ marginTop: 8, fontSize: 14, color: palette.textSecondary }}>
                   <strong>Explanation:</strong> {bugSnippet.explanation}
                 </div>
                 {!!bugFixHighlights.length && (
-                  <div style={{ marginTop: 12, fontSize: 14, color: "#1f2937" }}>
+                  <div style={{ marginTop: 12, fontSize: 14, color: palette.textSecondary }}>
                     <strong>Key fixes:</strong>
                     <ul style={{ margin: "8px 0 0 18px", padding: 0 }}>
                       {bugFixHighlights.map((line, idx) => (
@@ -555,7 +843,7 @@ export default function App() {
                             style={{
                               fontFamily:
                                 "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                              background: "#f3f4f6",
+                              background: isDarkMode ? "rgba(30,41,59,0.85)" : "#f3f4f6",
                               padding: "2px 4px",
                               borderRadius: 4,
                             }}
@@ -567,12 +855,18 @@ export default function App() {
                     </ul>
                   </div>
                 )}
-                {!won && (
+                <div
+                  style={{
+                    marginTop: 16,
+                    display: "flex",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
                   <button
                     type="button"
                     onClick={retryBugMode}
                     style={{
-                      marginTop: 16,
                       background: "#111827",
                       color: "#ffffff",
                       padding: "10px 18px",
@@ -582,19 +876,42 @@ export default function App() {
                       fontWeight: 600,
                     }}
                   >
-                    ↺ Try again
+                    ↺ Retry level
                   </button>
-                )}
+                  {won && !isLastBugLevel && (
+                    <button
+                      type="button"
+                      onClick={advanceBugLevel}
+                      style={{
+                        background: "#22c55e",
+                        color: "#ffffff",
+                        padding: "10px 18px",
+                        borderRadius: 8,
+                        border: 0,
+                        cursor: "pointer",
+                        fontWeight: 600,
+                      }}
+                    >
+                      → Next level
+                    </button>
+                  )}
+                  {won && isLastBugLevel && (
+                    <span style={{ color: "#047857", fontWeight: 600 }}>
+                      All {TOTAL_BUG_LEVELS} levels complete! 🎉
+                    </span>
+                  )}
+                </div>
               </div>
               <div
                 style={{
                   flex: "1 1 320px",
                   minWidth: 280,
-                  background: "#ffffff",
-                  border: "1px solid #e5e7eb",
+                  background: palette.surface,
+                  border: `1px solid ${palette.border}`,
                   borderRadius: 12,
                   padding: 16,
-                  boxShadow: "0 10px 20px rgba(15, 23, 42, 0.08)",
+                  boxShadow: palette.shadow,
+                  color: palette.textPrimary,
                 }}
               >
                 <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
@@ -606,12 +923,12 @@ export default function App() {
                   customStyle={{
                     margin: 0,
                     fontSize: 12,
-                    color: "#000000",
-                    background: "transparent",
+                    color: palette.textPrimary,
+                    background: palette.codeBackground,
                   }}
                   codeTagProps={{
                     style: {
-                      color: "#000000",
+                      color: palette.textPrimary,
                     },
                   }}
                 >
@@ -624,11 +941,11 @@ export default function App() {
       ) : gameMode === "complete" && target ? (
         // COMPLETE THE CODE MODE
         <>
-          <p style={{ color: "#6b7280", marginTop: 0 }}>
+          <p style={{ color: palette.textMuted, marginTop: 0 }}>
             Guess the code snippet in <strong>{MAX_TRIES}</strong> tries. Hints are
             per line: <Badge color="#22c55e" label="correct" />{" "}
             <Badge color="#eab308" label="present" />{" "}
-            <Badge color="#6b7280" label="absent" />.
+            <Badge color={palette.textMuted} label="absent" />.
           </p>
 
           <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
@@ -641,7 +958,7 @@ export default function App() {
                 <textarea
                   value={completeInput}
                   onChange={(e) => setCompleteInput(e.target!.value)}
-                  placeholder={`e.g.\nfunction reverse(s) {\n  return s.split('').reverse().join('');\n}`}
+                  placeholder={`e.g.\nfunction example(input) {\n  // build and return the result\n}\n`}
                   rows={8}
                   disabled={gameOver}
                   style={{
@@ -649,11 +966,22 @@ export default function App() {
                     fontFamily:
                       "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
                     fontSize: 14,
-                    padding: 12,
+                    padding: "12px 14px",
                     borderRadius: 8,
-                    border: "1px solid #e5e7eb",
+                    border: `1px solid ${palette.inputBorder}`,
                     outline: "none",
+                    background: palette.inputBackground,
+                    color: palette.inputText,
+                    boxShadow: isDarkMode
+                      ? "inset 0 0 0 1px rgba(148,163,184,0.15)"
+                      : "inset 0 0 0 1px rgba(15, 23, 42, 0.04)",
+                    lineHeight: 1.5,
                   }}
+                  spellCheck={false}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  wrap="off"
                 />
                 <div style={{ marginTop: 8, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                   <button
@@ -670,12 +998,12 @@ export default function App() {
                   >
                     Submit guess
                   </button>
-                  <span style={{ color: "#6b7280" }}>
+                  <span style={{ color: palette.textMuted }}>
                     Tries left: {Math.max(0, MAX_TRIES - completeGuesses.length)}
                   </span>
                   <button
                     type="button"
-                    onClick={() => setShowHint(!showHint)}
+                    onClick={() => setShowCompleteHint(!showCompleteHint)}
                     style={{
                       background: "transparent",
                       border: "1px solid #eab308",
@@ -686,19 +1014,19 @@ export default function App() {
                       fontWeight: 600,
                     }}
                   >
-                    {showHint ? "Hide Hint" : "Show Hint"}
+                    {showCompleteHint ? "Hide Hint" : "Show Hint"}
                   </button>
                 </div>
               </form>
 
-              {showHint && (
+              {showCompleteHint && (
                 <div style={{ 
                   marginTop: 12, 
                   padding: 12, 
-                  background: "rgba(234,179,8,0.1)", 
+                  background: isDarkMode ? "rgba(234,179,8,0.18)" : "rgba(234,179,8,0.1)", 
                   border: "1px solid #eab308",
                   borderRadius: 8,
-                  color: "#854d0e"
+                  color: isDarkMode ? "#fde68a" : "#854d0e"
                 }}>
                   💡 <strong>Hint:</strong> {target!.hint}
                 </div>
@@ -708,7 +1036,7 @@ export default function App() {
               <div style={{ marginTop: 16 }}>
                 {allFeedback.map((fb, gi) => (
                   <div key={gi} style={{ marginBottom: 10 }}>
-                    <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 6 }}>
+                    <div style={{ fontSize: 13, color: palette.textMuted, marginBottom: 6 }}>
                       Guess #{gi + 1}
                     </div>
                     <CodeBoard feedback={fb} />
@@ -721,25 +1049,40 @@ export default function App() {
             <div style={{ flex: 1, minWidth: 320 }}>
               <div
                 style={{
-                  border: "1px solid #e5e7eb",
+                  border: `1px solid ${palette.border}`,
                   borderRadius: 10,
                   padding: 12,
                   position: "sticky",
                   top: 24,
+                  background: palette.surface,
+                  boxShadow: palette.shadow,
+                  color: palette.textPrimary,
                 }}
               >
                 <h3 style={{ marginTop: 0, marginBottom: 6 }}>{target!.title}</h3>
-                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+                <div style={{ fontSize: 12, color: palette.textMuted, marginBottom: 8 }}>
                   Language: {target!.language} • Difficulty: {target!.difficulty}
                 </div>
                 {gameOver ? (
                   <div style={{ maxHeight: 360, overflow: "auto", borderRadius: 10 }}>
-                    <SyntaxHighlighter language={target!.language} wrapLongLines>
+                    <SyntaxHighlighter
+                      language={target!.language}
+                      wrapLongLines
+                      customStyle={{
+                        background: palette.codeBackground,
+                        color: palette.textPrimary,
+                      }}
+                      codeTagProps={{
+                        style: {
+                          color: palette.textPrimary,
+                        },
+                      }}
+                    >
                       {target!.lines.join("\n")}
                     </SyntaxHighlighter>
                   </div>
                 ) : (
-                  <div style={{ color: "#6b7280", fontSize: 14 }}>
+                  <div style={{ color: palette.textMuted, fontSize: 14 }}>
                     Solve to reveal the target code.
                   </div>
                 )}
@@ -802,12 +1145,16 @@ function CodeBoard({ feedback }: { feedback: LineFeedback[] }) {
                 ? "rgba(34,197,94,0.15)"
                 : f.status === "present"
                 ? "rgba(234,179,8,0.15)"
+                : isDarkMode
+                ? "rgba(148, 163, 184, 0.2)"
                 : "rgba(107,114,128,0.10)",
             borderColor:
               f.status === "correct"
                 ? "#22c55e"
                 : f.status === "present"
                 ? "#eab308"
+                : isDarkMode
+                ? "rgba(148,163,184,0.6)"
                 : "#6b7280",
           }}
         >
