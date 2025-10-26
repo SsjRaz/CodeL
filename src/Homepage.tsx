@@ -89,13 +89,13 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
       }
     }
 
-    let streams: CodeStream[] = [];
-    for (let i = 0; i < 50; i++) {
-      streams.push(new CodeStream());
-    }
+    const streams: CodeStream[] = Array.from({ length: 50 }, () => new CodeStream());
+
+    let animationFrameId: number;
 
     function animate() {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       streams.forEach((stream, index) => {
         stream.update();
@@ -106,7 +106,7 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
         }
       });
 
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
     }
 
     animate();
@@ -119,6 +119,7 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
     window.addEventListener("resize", handleResize);
 
     return () => {
+      cancelAnimationFrame(animationFrameId);
       window.removeEventListener("resize", handleResize);
     };
   }, []);
