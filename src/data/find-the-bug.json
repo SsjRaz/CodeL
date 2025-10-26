@@ -2,6 +2,7 @@
   {
     "id": 1,
     "title": "Off-by-One Error in Loop",
+    "goal": "Return the sum of all elements in the array without throwing because of invalid indexes.",
     "language": "javascript",
     "difficulty": "easy",
     "hint": "Check the loop condition carefully",
@@ -15,6 +16,7 @@
       "}"
     ],
     "bugLineNumber": 3,
+    "goal": "Reverse the array contents while leaving the original array unchanged.",
     "fixedLines": [
       "function sumArray(arr) {",
       "  let sum = 0;",
@@ -29,6 +31,7 @@
   {
     "id": 2,
     "title": "Missing Return Statement",
+    "goal": "Return the product of the two parameters so callers receive the computed value instead of undefined.",
     "language": "javascript",
     "difficulty": "easy",
     "hint": "Functions should return a value",
@@ -48,6 +51,7 @@
   {
     "id": 3,
     "title": "Wrong Comparison Operator",
+    "goal": "Implement a function that returns true only when both inputs are strictly equal.",
     "language": "javascript",
     "difficulty": "easy",
     "hint": "Check the comparison operator for equality",
@@ -73,6 +77,7 @@
   {
     "id": 4,
     "title": "Incorrect Array Method",
+    "goal": "Return a new array containing the first three items while leaving the original array untouched.",
     "language": "javascript",
     "difficulty": "medium",
     "hint": "Check which array method modifies the original array",
@@ -93,6 +98,7 @@
   {
     "id": 5,
     "title": "Missing Break in Switch",
+    "goal": "Map each weekday or weekend name to the correct type without falling through to the wrong case.",
     "language": "javascript",
     "difficulty": "medium",
     "hint": "Switch cases need break statements",
@@ -132,6 +138,7 @@
   {
     "id": 6,
     "title": "Asynchronous Callback Issue",
+    "goal": "Print 0, 1, 2 with a delay, making sure each timeout logs its own loop index.",
     "language": "javascript",
     "difficulty": "hard",
     "hint": "Loop variable in async callbacks",
@@ -155,6 +162,7 @@
   {
     "id": 7,
     "title": "Type Coercion Bug",
+    "goal": "Add the two inputs numerically so string inputs like '5' and '3' produce 8, not '53'.",
     "language": "javascript",
     "difficulty": "medium",
     "hint": "String concatenation vs addition",
@@ -174,6 +182,7 @@
   {
     "id": 8,
     "title": "Infinite Recursion",
+    "goal": "Count down to zero and stop cleanly so the recursion terminates without hitting negative numbers.",
     "language": "javascript",
     "difficulty": "medium",
     "hint": "Check the base case condition",
@@ -197,6 +206,7 @@
   {
     "id": 9,
     "title": "Array Mutation Bug",
+    "goal": "Return a reversed copy of the input array without mutating the original data structure.",
     "language": "javascript",
     "difficulty": "medium",
     "hint": "Some array methods mutate the original",
@@ -216,6 +226,7 @@
   {
     "id": 10,
     "title": "Null Reference Error",
+    "goal": "Safely return the user's name in uppercase, even when user data might be missing.",
     "language": "javascript",
     "difficulty": "easy",
     "hint": "Check for null or undefined before accessing properties",
@@ -235,6 +246,7 @@
   {
     "id": 11,
     "title": "Wrong Array Index",
+    "goal": "Return the final element of the sequence without triggering an index error.",
     "language": "python",
     "difficulty": "easy",
     "hint": "Remember Python uses zero-based indexing",
@@ -252,6 +264,7 @@
   {
     "id": 12,
     "title": "Missing Else Condition",
+    "goal": "Ensure the function returns a boolean for all inputs, indicating whether the number is positive.",
     "language": "javascript",
     "difficulty": "easy",
     "hint": "Function doesn't return in all code paths",
@@ -276,6 +289,7 @@
   {
     "id": 13,
     "title": "Incorrect String Comparison",
+    "goal": "Determine if a word exists in text regardless of case differences.",
     "language": "javascript",
     "difficulty": "medium",
     "hint": "Case sensitivity matters",
@@ -295,6 +309,7 @@
   {
     "id": 14,
     "title": "Floating Point Precision",
+    "goal": "Compare two floating point numbers with tolerance so equivalent values pass the equality check.",
     "language": "javascript",
     "difficulty": "hard",
     "hint": "Floating point arithmetic isn't always exact",
@@ -314,6 +329,7 @@
   {
     "id": 15,
     "title": "Missing Closing Bracket",
+    "goal": "Return either the product or sum of two numbers depending on which is larger, using a complete conditional block.",
     "language": "javascript",
     "difficulty": "easy",
     "hint": "Count your brackets!",

@@ -30,6 +30,7 @@ interface BugSnippet {
   difficulty: string;
   hint: string;
   hints?: string[];
+  goal?: string;
   validFixes?: string[];
   buggyLines: string[];
   bugLineNumber: number;
@@ -295,6 +296,16 @@ export default function App() {
     };
   }, [palette.pageBackground, palette.textPrimary]);
 
+  const baseCardStyle = useMemo(
+    () => ({
+      background: palette.surface,
+      border: `1px solid ${palette.border}`,
+      borderRadius: 12,
+      boxShadow: palette.shadow,
+    }),
+    [palette.surface, palette.border, palette.shadow]
+  );
+
   const clampedBugLevelIndex =
     TOTAL_BUG_LEVELS > 0
       ? Math.min(bugLevelIndex, TOTAL_BUG_LEVELS - 1)
@@ -305,6 +316,12 @@ export default function App() {
     gameMode === "bug" && TOTAL_BUG_LEVELS > 0
       ? BUG_LEVELS[clampedBugLevelIndex]
       : null;
+
+  useEffect(() => {
+    if (gameMode === "bug" && bugSnippet) {
+      setBugFixInput(bugSnippet.buggyLines.join("\n"));
+    }
+  }, [gameMode, bugSnippet]);
 
   const target: CompleteCodeSnippet | null = gameMode === "complete"
     ? (completeCodeSnippets as CompleteCodeSnippet[])[0]
@@ -344,6 +361,10 @@ export default function App() {
 
   const displayedBugHints = bugHints.slice(0, bugHintLevel);
   const canRevealAnotherHint = bugHintLevel < bugHints.length;
+  const bugGoalText = bugSnippet
+    ? bugSnippet.goal ?? bugSnippet.explanation ?? bugSnippet.hint
+    : "";
+  const bugTriesLeft = Math.max(0, MAX_TRIES - bugGuesses.length);
 
   const lastFb = allFeedback.at(-1);
   const lastWasAllCorrect =
@@ -366,6 +387,11 @@ export default function App() {
 
   const completeGameOver =
     completeGuesses.length >= MAX_TRIES || wonCompleteMode;
+
+  const completeTriesLeft = Math.max(0, MAX_TRIES - completeGuesses.length);
+  const completeGoalText = target
+    ? `Implement ${target.title} so it behaves exactly like the reference solution.`
+    : "";
 
   // Game ends on win or after MAX_TRIES
   const gameOver =
@@ -405,7 +431,6 @@ export default function App() {
 
       setBugGuesses((prev) => [...prev, guess]);
       setBugLineInput("");
-      setBugFixInput("");
     } else if (gameMode === "complete" && target) {
       // Complete the code mode: check code match
       const gLines = normalizeLines(completeInput);
@@ -487,99 +512,143 @@ export default function App() {
       </div>
       
       {gameMode === "bug" && bugSnippet ? (
-        // FIND THE BUG MODE
         <>
           <div
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "baseline",
+              ...baseCardStyle,
+              padding: 20,
+              display: "grid",
               gap: 12,
-              marginBottom: 8,
-              color: "#334155",
-              fontWeight: 600,
+              marginBottom: 16,
             }}
           >
-            <span>
-              Level {Math.min(clampedBugLevelIndex + 1, BUG_LEVEL_DISPLAY_TOTAL)} of {BUG_LEVEL_DISPLAY_TOTAL}
-            </span>
-            <span style={{ fontSize: 14, fontWeight: 500 }}>
-              Difficulty: {bugSnippet.difficulty}
-            </span>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+                gap: 12,
+                color: palette.textSecondary,
+                fontWeight: 600,
+              }}
+            >
+              <span>
+                Level {Math.min(clampedBugLevelIndex + 1, BUG_LEVEL_DISPLAY_TOTAL)} of {BUG_LEVEL_DISPLAY_TOTAL}
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 500 }}>
+                Difficulty: {bugSnippet.difficulty}
+              </span>
+            </div>
+            <h2 style={{ margin: 0, fontSize: 22 }}>{bugSnippet.title}</h2>
+            {bugGoalText && (
+              <p style={{ margin: 0, color: palette.textSecondary, lineHeight: 1.6 }}>
+                {bugGoalText}
+              </p>
+            )}
+            <p style={{ color: palette.textMuted, margin: 0 }}>
+              Find the buggy line in <strong>{MAX_TRIES}</strong> tries. Identify which line contains the bug and fix it directly below.
+            </p>
           </div>
-          <p style={{ color: palette.textMuted, marginTop: 0 }}>
-            Find the buggy line in <strong>{MAX_TRIES}</strong> tries. Identify which line contains the bug!
-          </p>
-          <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <form onSubmit={onSubmit}>
-                <label style={{ display: "block", fontWeight: 600, marginBottom: 8 }}>
-                  Type the line number with the bug (1-{bugSnippet.buggyLines.length})
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max={bugSnippet.buggyLines.length}
-                  value={bugLineInput}
-                  onChange={(e) => setBugLineInput(e.target!.value)}
-                  placeholder="e.g., 3"
-                  disabled={gameOver}
+
+          <div
+            style={{
+              display: "grid",
+              gap: 24,
+              marginTop: 16,
+              gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
+              alignItems: "start",
+            }}
+          >
+            <div
+              style={{
+                ...baseCardStyle,
+                padding: 20,
+                display: "grid",
+                gap: 16,
+              }}
+            >
+              <form onSubmit={onSubmit} style={{ display: "grid", gap: 16 }}>
+                <div style={{ display: "grid", gap: 8 }}>
+                  <label style={{ fontWeight: 600 }}>
+                    Type the line number with the bug (1-{bugSnippet.buggyLines.length})
+                  </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={bugSnippet.buggyLines.length}
+                      value={bugLineInput}
+                      onChange={(e) => setBugLineInput(e.target!.value)}
+                      placeholder="e.g., 3"
+                      disabled={gameOver}
+                      style={{
+                        width: "100%",
+                        fontFamily:
+                          "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                        fontSize: 14,
+                        padding: 12,
+                        borderRadius: 8,
+                        border: `1px solid ${palette.inputBorder}`,
+                        outline: "none",
+                        background: palette.inputBackground,
+                        color: palette.inputText,
+                        boxShadow: isDarkMode
+                          ? "inset 0 0 0 1px rgba(148,163,184,0.15)"
+                          : "inset 0 0 0 1px rgba(15, 23, 42, 0.04)",
+                      }}
+                  />
+                </div>
+                <div
                   style={{
-                    width: "100%",
-                    fontFamily:
-                      "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                    fontSize: 14,
-                    padding: 12,
+                    display: "grid",
+                    gridTemplateColumns: "auto 1fr",
+                    maxHeight: 400,
+                    background: isDarkMode ? "rgba(15,23,42,0.6)" : palette.codeBackground,
                     borderRadius: 8,
-                    border: `1px solid ${palette.inputBorder}`,
-                    outline: "none",
-                    background: palette.inputBackground,
-                    color: palette.inputText,
-                    boxShadow: isDarkMode
-                      ? "inset 0 0 0 1px rgba(148,163,184,0.15)"
-                      : "inset 0 0 0 1px rgba(15, 23, 42, 0.04)",
-                  }}
-                />
-                <label
-                  style={{
-                    display: "block",
-                    fontWeight: 600,
-                    marginBottom: 8,
-                    marginTop: 16,
+                    border: `1px solid ${palette.border}`,
+                    overflow: "hidden",
                   }}
                 >
-                  Describe or paste the fix (single line or full corrected snippet)
-                </label>
-                <textarea
-                  value={bugFixInput}
-                  onChange={(e) => setBugFixInput(e.target!.value)}
-                  placeholder={`e.g.\nreturn value;`}
-                  rows={4}
-                  disabled={gameOver}
-                  style={{
-                    width: "100%",
-                    fontFamily:
-                      "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                    fontSize: 14,
-                    padding: "12px 14px",
-                    borderRadius: 8,
-                    border: `1px solid ${palette.inputBorder}`,
-                    outline: "none",
-                    resize: "vertical",
-                    background: palette.inputBackground,
-                    color: palette.inputText,
-                    boxShadow: isDarkMode
-                      ? "inset 0 0 0 1px rgba(148,163,184,0.15)"
-                      : "inset 0 0 0 1px rgba(15, 23, 42, 0.04)",
-                    lineHeight: 1.5,
-                  }}
-                  spellCheck={false}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  wrap="off"
-                />
-                <div style={{ marginTop: 8, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                  <div
+                    style={{
+                      padding: "12px 10px",
+                      fontFamily: "monospace",
+                      fontSize: 12,
+                      color: palette.textMuted,
+                      borderRight: `1px solid ${palette.border}`,
+                      background: isDarkMode ? "rgba(30,41,59,0.85)" : "rgba(148,163,184,0.15)",
+                    }}
+                  >
+                    {bugSnippet.buggyLines.map((_, idx) => (
+                      <div key={idx}>{idx + 1}</div>
+                    ))}
+                  </div>
+                  <textarea
+                    value={bugFixInput}
+                    onChange={(e) => setBugFixInput(e.target!.value)}
+                    disabled={gameOver}
+                    style={{
+                      border: "none",
+                      outline: "none",
+                      background: "transparent",
+                      color: palette.textPrimary,
+                      fontFamily:
+                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                      fontSize: 14,
+                      padding: 12,
+                      resize: "vertical",
+                      minHeight: 160,
+                      lineHeight: 1.5,
+                      whiteSpace: "pre",
+                      overflow: "auto",
+                    }}
+                    spellCheck={false}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    wrap="off"
+                  />
+                </div>
+                <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                   <button
                     type="submit"
                     disabled={
@@ -587,68 +656,68 @@ export default function App() {
                       !bugLineInput.trim().length ||
                       !bugFixInput.trim().length
                     }
-                    style={{
-                      background:
-                        gameOver ||
-                        !bugLineInput.trim().length ||
-                        !bugFixInput.trim().length
-                          ? "#9ca3af"
-                          : "#111827",
-                      color: "#ffffff",
-                      padding: "8px 14px",
-                      borderRadius: 8,
-                      border: 0,
-                      cursor:
-                        gameOver ||
-                        !bugLineInput.trim().length ||
-                        !bugFixInput.trim().length
-                          ? "not-allowed"
-                          : "pointer",
-                    }}
-                  >
-                    Submit guess
-                  </button>
-                  <span style={{ color: palette.textMuted }}>
-                    Tries left: {Math.max(0, MAX_TRIES - bugGuesses.length)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setBugHintLevel((prev) =>
-                        canRevealAnotherHint ? prev + 1 : prev
-                      )
-                    }
-                    style={{
-                      background: "transparent",
-                      border: "1px solid #eab308",
-                      color: canRevealAnotherHint ? "#eab308" : "#9ca3af",
-                      padding: "8px 14px",
-                      borderRadius: 8,
-                      cursor: canRevealAnotherHint ? "pointer" : "not-allowed",
-                      fontWeight: 600,
-                    }}
-                    disabled={!canRevealAnotherHint}
-                  >
-                    {bugHints.length === 0
-                      ? "No hints available"
-                      : canRevealAnotherHint
-                      ? `Reveal Hint ${bugHintLevel + 1}`
-                      : "All hints shown"}
-                  </button>
-                  {bugHintLevel > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setBugHintLevel(0)}
                       style={{
-                        background: "transparent",
-                        border: "1px solid #9ca3af",
-                        color: "#4b5563",
+                        background:
+                          gameOver ||
+                          !bugLineInput.trim().length ||
+                          !bugFixInput.trim().length
+                            ? "#9ca3af"
+                            : "#111827",
+                        color: "#ffffff",
                         padding: "8px 14px",
                         borderRadius: 8,
-                        cursor: "pointer",
+                        border: 0,
+                        cursor:
+                          gameOver ||
+                          !bugLineInput.trim().length ||
+                          !bugFixInput.trim().length
+                            ? "not-allowed"
+                            : "pointer",
                         fontWeight: 600,
                       }}
                     >
+                      Submit guess
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBugHintLevel((prev) =>
+                          canRevealAnotherHint ? prev + 1 : prev
+                        )
+                      }
+                      style={{
+                        background: "transparent",
+                        border: `1px solid ${
+                          canRevealAnotherHint ? "#eab308" : palette.border
+                        }`,
+                        color: canRevealAnotherHint ? "#eab308" : palette.textMuted,
+                        padding: "8px 14px",
+                        borderRadius: 8,
+                        cursor: canRevealAnotherHint ? "pointer" : "not-allowed",
+                        fontWeight: 600,
+                      }}
+                      disabled={!canRevealAnotherHint}
+                    >
+                      {bugHints.length === 0
+                        ? "No hints available"
+                        : canRevealAnotherHint
+                        ? `Reveal Hint ${bugHintLevel + 1}`
+                        : "All hints shown"}
+                    </button>
+                    {bugHintLevel > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setBugHintLevel(0)}
+                        style={{
+                          background: "transparent",
+                          border: `1px solid ${palette.border}`,
+                          color: palette.textPrimary,
+                          padding: "8px 14px",
+                          borderRadius: 8,
+                          cursor: "pointer",
+                          fontWeight: 600,
+                        }}
+                      >
                       Hide hints
                     </button>
                   )}
@@ -656,29 +725,57 @@ export default function App() {
               </form>
 
               {displayedBugHints.length > 0 && (
+                  <div
+                    style={{
+                      padding: 12,
+                      background: isDarkMode ? "rgba(234,179,8,0.18)" : "rgba(234,179,8,0.08)",
+                      border: "1px solid #eab308",
+                      borderRadius: 10,
+                      color: isDarkMode ? "#fde68a" : "#854d0e",
+                      display: "grid",
+                      gap: 8,
+                    }}
+                  >
+                    {displayedBugHints.map((hint, idx) => (
+                      <div key={idx}>
+                        <strong>Hint {idx + 1}:</strong> {hint}
+                      </div>
+                    ))}
+                  </div>
+                )}
+            </div>
+
+            <div
+              style={{
+                ...baseCardStyle,
+                padding: 16,
+                display: "grid",
+                gap: 12,
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>Attempts & feedback</div>
+                <div style={{ fontSize: 13, color: palette.textMuted }}>
+                  Tries left: {bugTriesLeft}
+                </div>
+              </div>
+              {bugGameOver && (
                 <div
                   style={{
-                    marginTop: 12,
-                    padding: 12,
-                    background: isDarkMode ? "rgba(234,179,8,0.18)" : "rgba(234,179,8,0.08)",
-                    border: "1px solid #eab308",
-                    borderRadius: 10,
-                    color: "#854d0e",
-                    display: "grid",
-                    gap: 8,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: wonBugMode ? "#15803d" : "#b91c1c",
                   }}
                 >
-                  {displayedBugHints.map((hint, idx) => (
-                    <div key={idx}>
-                      <strong>Hint {idx + 1}:</strong> {hint}
-                    </div>
-                  ))}
+                  {wonBugMode ? "Challenge solved!" : "No more attempts left."}
                 </div>
               )}
-
-              {/* Feedback board */}
-              <div style={{ marginTop: 16 }}>
-                {bugGuesses.map((guess, gi) => {
+              {bugGuesses.length === 0 ? (
+                <p style={{ color: palette.textMuted, margin: 0 }}>
+                  Submit your first combination to see feedback here.
+                </p>
+              ) : (
+                bugGuesses.map((guess, gi) => {
                   const { lineCorrect, fixCorrect } = guess;
                   const guessResult =
                     lineCorrect && fixCorrect
@@ -695,7 +792,7 @@ export default function App() {
                           label: "✗ Keep iterating",
                         };
                   return (
-                    <div key={gi} style={{ marginBottom: 12 }}>
+                    <div key={gi} style={{ display: "grid", gap: 8 }}>
                       <div
                         style={{
                           fontSize: 14,
@@ -712,7 +809,6 @@ export default function App() {
                       </div>
                       <div
                         style={{
-                          marginTop: 6,
                           fontSize: 13,
                           color: palette.textSecondary,
                           border: `1px solid ${palette.border}`,
@@ -744,78 +840,33 @@ export default function App() {
                       </div>
                     </div>
                   );
-                })}
-              </div>
-            </div>
-
-            {/* Show buggy code with line numbers */}
-            <div style={{ position: "relative", minWidth: 320 }}>
-              <div
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: 30,
-                  background: isDarkMode ? "rgba(30,41,59,0.85)" : "#f3f4f6",
-                  borderRight: `1px solid ${palette.border}`,
-                  padding: "10px 5px",
-                  fontFamily: "monospace",
-                  fontSize: 12,
-                  color: palette.textMuted,
-                  lineHeight: 1.5,
-                  overflow: "hidden",
-                }}
-              >
-                {bugSnippet.buggyLines.map((_, i) => (
-                  <div key={i}>{i + 1}</div>
-                ))}
-              </div>
-
-              {/* Code container: limits height and wraps long lines */}
-              <div style={{ marginLeft: 40, maxHeight: 360, overflow: "auto" }}>
-                <SyntaxHighlighter
-                  language={bugSnippet.language}
-                  wrapLongLines
-                  customStyle={{
-                    background: isDarkMode ? "rgba(15,23,42,0.6)" : "transparent",
-                    padding: 0,
-                    margin: 0,
-                    color: palette.textPrimary,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                    maxHeight: 400,
-                    overflow: "auto",
-                  }}
-                  codeTagProps={{
-                    style: {
-                      color: palette.textPrimary,
-                    },
-                  }}
-                >
-                  {bugSnippet.buggyLines.join("\n")}
-                </SyntaxHighlighter>
-              </div>
+                })
+              )}
             </div>
           </div>
+
           {gameOver && (
             <div
               style={{
                 marginTop: 24,
-                display: "flex",
-                flexWrap: "wrap",
+                display: "grid",
                 gap: 24,
-                alignItems: "flex-start",
+                gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                alignItems: "start",
               }}
             >
               <div
                 style={{
-                  flex: "1 1 280px",
-                  background: won ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)",
+                  ...baseCardStyle,
+                  padding: 20,
+                  background: won
+                    ? isDarkMode
+                      ? "rgba(34,197,94,0.18)"
+                      : "rgba(34,197,94,0.08)"
+                    : isDarkMode
+                    ? "rgba(239,68,68,0.2)"
+                    : "rgba(239,68,68,0.08)",
                   border: `1px solid ${won ? "#22c55e" : "#fca5a5"}`,
-                  borderRadius: 12,
-                  padding: 16,
-                  minWidth: 260,
                 }}
               >
                 <div
@@ -904,13 +955,8 @@ export default function App() {
               </div>
               <div
                 style={{
-                  flex: "1 1 320px",
-                  minWidth: 280,
-                  background: palette.surface,
-                  border: `1px solid ${palette.border}`,
-                  borderRadius: 12,
+                  ...baseCardStyle,
                   padding: 16,
-                  boxShadow: palette.shadow,
                   color: palette.textPrimary,
                 }}
               >
@@ -941,152 +987,219 @@ export default function App() {
       ) : gameMode === "complete" && target ? (
         // COMPLETE THE CODE MODE
         <>
-          <p style={{ color: palette.textMuted, marginTop: 0 }}>
-            Guess the code snippet in <strong>{MAX_TRIES}</strong> tries. Hints are
-            per line: <Badge color="#22c55e" label="correct" />{" "}
-            <Badge color="#eab308" label="present" />{" "}
-            <Badge color={palette.textMuted} label="absent" />.
-          </p>
-
-          <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
-            {/* Left: input and feedback */}
-            <div style={{ flex: 1 }}>
-              <form onSubmit={onSubmit}>
-                <label style={{ display: "block", fontWeight: 600, marginBottom: 8 }}>
-                  Your guess (paste/type the function)
-                </label>
-                <textarea
-                  value={completeInput}
-                  onChange={(e) => setCompleteInput(e.target!.value)}
-                  placeholder={`e.g.\nfunction example(input) {\n  // build and return the result\n}\n`}
-                  rows={8}
-                  disabled={gameOver}
-                  style={{
-                    width: "100%",
-                    fontFamily:
-                      "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                    fontSize: 14,
-                    padding: "12px 14px",
-                    borderRadius: 8,
-                    border: `1px solid ${palette.inputBorder}`,
-                    outline: "none",
-                    background: palette.inputBackground,
-                    color: palette.inputText,
-                    boxShadow: isDarkMode
-                      ? "inset 0 0 0 1px rgba(148,163,184,0.15)"
-                      : "inset 0 0 0 1px rgba(15, 23, 42, 0.04)",
-                    lineHeight: 1.5,
-                  }}
-                  spellCheck={false}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  wrap="off"
-                />
-                <div style={{ marginTop: 8, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                  <button
-                    type="submit"
-                    disabled={gameOver}
-                    style={{
-                      background: gameOver ? "#9ca3af" : "#111827",
-                      color: "white",
-                      padding: "8px 14px",
-                      borderRadius: 8,
-                      border: 0,
-                      cursor: gameOver ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    Submit guess
-                  </button>
-                  <span style={{ color: palette.textMuted }}>
-                    Tries left: {Math.max(0, MAX_TRIES - completeGuesses.length)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowCompleteHint(!showCompleteHint)}
-                    style={{
-                      background: "transparent",
-                      border: "1px solid #eab308",
-                      color: "#eab308",
-                      padding: "8px 14px",
-                      borderRadius: 8,
-                      cursor: "pointer",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {showCompleteHint ? "Hide Hint" : "Show Hint"}
-                  </button>
-                </div>
-              </form>
-
-              {showCompleteHint && (
-                <div style={{ 
-                  marginTop: 12, 
-                  padding: 12, 
-                  background: isDarkMode ? "rgba(234,179,8,0.18)" : "rgba(234,179,8,0.1)", 
-                  border: "1px solid #eab308",
-                  borderRadius: 8,
-                  color: isDarkMode ? "#fde68a" : "#854d0e"
-                }}>
-                  💡 <strong>Hint:</strong> {target!.hint}
-                </div>
-              )}
-
-              {/* Feedback board */}
-              <div style={{ marginTop: 16 }}>
-                {allFeedback.map((fb, gi) => (
-                  <div key={gi} style={{ marginBottom: 10 }}>
-                    <div style={{ fontSize: 13, color: palette.textMuted, marginBottom: 6 }}>
-                      Guess #{gi + 1}
-                    </div>
-                    <CodeBoard feedback={fb} />
-                  </div>
-                ))}
-              </div>
+          <div
+            style={{
+              ...baseCardStyle,
+              padding: 20,
+              display: "grid",
+              gap: 12,
+              marginBottom: 16,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+                gap: 12,
+                color: palette.textSecondary,
+                fontWeight: 600,
+              }}
+            >
+              <span>{target.language} • {target.difficulty}</span>
+              <span>Level objective</span>
             </div>
+            <h2 style={{ margin: 0, fontSize: 22 }}>{target.title}</h2>
+            {completeGoalText && (
+              <p style={{ margin: 0, color: palette.textSecondary, lineHeight: 1.6 }}>
+                {completeGoalText}
+              </p>
+            )}
+            <p style={{ color: palette.textMuted, margin: 0 }}>
+              Guess the code snippet in <strong>{MAX_TRIES}</strong> tries. Hints are per line:
+              <span style={{ marginLeft: 8 }}><Badge color="#22c55e" label="correct" /></span>{" "}
+              <Badge color="#eab308" label="present" />{" "}
+              <Badge color={palette.textMuted} label="absent" />.
+            </p>
+          </div>
 
-            {/* Right: reveal after game ends */}
-            <div style={{ flex: 1, minWidth: 320 }}>
+          <div
+            style={{
+              display: "grid",
+              gap: 24,
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              alignItems: "start",
+            }}
+          >
+            <div style={{ display: "grid", gap: 16 }}>
               <div
                 style={{
-                  border: `1px solid ${palette.border}`,
-                  borderRadius: 10,
-                  padding: 12,
-                  position: "sticky",
-                  top: 24,
-                  background: palette.surface,
-                  boxShadow: palette.shadow,
-                  color: palette.textPrimary,
+                  ...baseCardStyle,
+                  padding: 20,
+                  display: "grid",
+                  gap: 16,
                 }}
               >
-                <h3 style={{ marginTop: 0, marginBottom: 6 }}>{target!.title}</h3>
-                <div style={{ fontSize: 12, color: palette.textMuted, marginBottom: 8 }}>
-                  Language: {target!.language} • Difficulty: {target!.difficulty}
-                </div>
-                {gameOver ? (
-                  <div style={{ maxHeight: 360, overflow: "auto", borderRadius: 10 }}>
-                    <SyntaxHighlighter
-                      language={target!.language}
-                      wrapLongLines
-                      customStyle={{
-                        background: palette.codeBackground,
-                        color: palette.textPrimary,
+                <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <label style={{ fontWeight: 600 }}>
+                      Your guess (paste/type the function)
+                    </label>
+                    <textarea
+                      value={completeInput}
+                      onChange={(e) => setCompleteInput(e.target!.value)}
+                      placeholder={`e.g.\nfunction example(input) {\n  // build and return the result\n}\n`}
+                      rows={8}
+                      disabled={gameOver}
+                      style={{
+                        width: "100%",
+                        fontFamily:
+                          "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                        fontSize: 14,
+                        padding: "12px 14px",
+                        borderRadius: 8,
+                        border: `1px solid ${palette.inputBorder}`,
+                        outline: "none",
+                        background: palette.inputBackground,
+                        color: palette.inputText,
+                        boxShadow: isDarkMode
+                          ? "inset 0 0 0 1px rgba(148,163,184,0.15)"
+                          : "inset 0 0 0 1px rgba(15, 23, 42, 0.04)",
+                        lineHeight: 1.5,
                       }}
-                      codeTagProps={{
-                        style: {
-                          color: palette.textPrimary,
-                        },
+                      spellCheck={false}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      wrap="off"
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                    <button
+                      type="submit"
+                      disabled={gameOver}
+                      style={{
+                        background: gameOver ? "#9ca3af" : "#111827",
+                        color: "white",
+                        padding: "8px 14px",
+                        borderRadius: 8,
+                        border: 0,
+                        cursor: gameOver ? "not-allowed" : "pointer",
+                        fontWeight: 600,
                       }}
                     >
-                      {target!.lines.join("\n")}
-                    </SyntaxHighlighter>
+                      Submit guess
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCompleteHint(!showCompleteHint)}
+                      style={{
+                        background: "transparent",
+                        border: "1px solid #eab308",
+                        color: "#eab308",
+                        padding: "8px 14px",
+                        borderRadius: 8,
+                        cursor: "pointer",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {showCompleteHint ? "Hide Hint" : "Show Hint"}
+                    </button>
                   </div>
-                ) : (
-                  <div style={{ color: palette.textMuted, fontSize: 14 }}>
-                    Solve to reveal the target code.
+                </form>
+
+                {showCompleteHint && (
+                  <div style={{ 
+                    padding: 12, 
+                    background: isDarkMode ? "rgba(234,179,8,0.18)" : "rgba(234,179,8,0.1)", 
+                    border: "1px solid #eab308",
+                    borderRadius: 8,
+                    color: isDarkMode ? "#fde68a" : "#854d0e"
+                  }}>
+                    💡 <strong>Hint:</strong> {target!.hint}
                   </div>
                 )}
               </div>
+
+              <div
+                style={{
+                  ...baseCardStyle,
+                  padding: 16,
+                  display: "grid",
+                  gap: 12,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>Attempts & feedback</div>
+                  <div style={{ fontSize: 13, color: palette.textMuted }}>
+                    Tries left: {completeTriesLeft}
+                  </div>
+                </div>
+                {completeGameOver && (
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: wonCompleteMode ? "#15803d" : "#b91c1c",
+                    }}
+                  >
+                    {wonCompleteMode ? "Challenge solved!" : "No more attempts left."}
+                  </div>
+                )}
+                {allFeedback.length === 0 ? (
+                  <p style={{ color: palette.textMuted, margin: 0 }}>
+                    Each attempt will appear here with line-by-line feedback.
+                  </p>
+                ) : (
+                  allFeedback.map((fb, gi) => (
+                    <div key={gi} style={{ display: "grid", gap: 6 }}>
+                      <div style={{ fontSize: 13, color: palette.textMuted }}>
+                        Guess #{gi + 1}
+                      </div>
+                      <CodeBoard feedback={fb} />
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div
+              style={{
+                ...baseCardStyle,
+                padding: 16,
+                position: "sticky",
+                top: 24,
+                color: palette.textPrimary,
+              }}
+            >
+              <h3 style={{ marginTop: 0, marginBottom: 6 }}>{target!.title}</h3>
+              <div style={{ fontSize: 12, color: palette.textMuted, marginBottom: 8 }}>
+                Language: {target!.language} • Difficulty: {target!.difficulty}
+              </div>
+              {gameOver ? (
+                <div style={{ maxHeight: 360, overflow: "auto", borderRadius: 10 }}>
+                  <SyntaxHighlighter
+                    language={target!.language}
+                    wrapLongLines
+                    customStyle={{
+                      background: palette.codeBackground,
+                      color: palette.textPrimary,
+                    }}
+                    codeTagProps={{
+                      style: {
+                        color: palette.textPrimary,
+                      },
+                    }}
+                  >
+                    {target!.lines.join("\n")}
+                  </SyntaxHighlighter>
+                </div>
+              ) : (
+                <div style={{ color: palette.textMuted, fontSize: 14 }}>
+                  Solve to reveal the target code.
+                </div>
+              )}
             </div>
           </div>
         </>
