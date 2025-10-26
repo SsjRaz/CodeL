@@ -19,7 +19,6 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background: "#ffffff",
         padding: "0 16px",
         zIndex: 9999,
       }}
@@ -216,7 +215,6 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
             fontWeight: 700,
             margin: "0 0 16px 0",
             letterSpacing: "0.02em",
-            color: "#000000",
           }}
         >
           CodeL
