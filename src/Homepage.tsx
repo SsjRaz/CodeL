@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface HomepageProps {
   onSelectMode: (mode: "bug" | "complete") => void;
@@ -6,6 +6,118 @@ interface HomepageProps {
 
 export default function Homepage({ onSelectMode }: HomepageProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const codeSnippets = [
+      "const", "function", "return", "if", "else", "for", "while",
+      "let", "var", "class", "import", "export", "async", "await",
+      "{", "}", "(", ")", "[", "]", "=>", "===", "!==", ";",
+      "true", "false", "null", "undefined", "this", "new", "try",
+      "catch", "throw", "break", "continue", "switch", "case"
+    ];
+
+    const colors = [
+      "#00ff00", "#00ffff", "#ff00ff", "#ffff00", "#ff0000",
+      "#0000ff", "#00ff88", "#ff8800", "#8800ff", "#88ff00"
+    ];
+
+    class CodeStream {
+      x: number;
+      y: number;
+      speed: number;
+      text: string;
+      color: string;
+      opacity: number;
+      direction: "horizontal" | "vertical";
+
+      constructor() {
+        this.direction = Math.random() > 0.5 ? "horizontal" : "vertical";
+        
+        if (this.direction === "horizontal") {
+          this.x = -100;
+          this.y = Math.random() * canvas.height;
+          this.speed = 1 + Math.random() * 2;
+        } else {
+          this.x = Math.random() * canvas.width;
+          this.y = Math.random() > 0.5 ? -50 : canvas.height + 50;
+          this.speed = (this.y < 0 ? 1 : -1) * (1 + Math.random() * 2);
+        }
+        
+        this.text = codeSnippets[Math.floor(Math.random() * codeSnippets.length)];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.opacity = 0.3 + Math.random() * 0.4;
+      }
+
+      update() {
+        if (this.direction === "horizontal") {
+          this.x += this.speed;
+        } else {
+          this.y += this.speed;
+        }
+      }
+
+      draw(ctx: CanvasRenderingContext2D) {
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        ctx.fillStyle = this.color;
+        ctx.font = "14px monospace";
+        ctx.fillText(this.text, this.x, this.y);
+        ctx.restore();
+      }
+
+      isOffScreen() {
+        if (this.direction === "horizontal") {
+          return this.x > canvas.width + 100;
+        } else {
+          return this.speed > 0 ? this.y > canvas.height + 50 : this.y < -50;
+        }
+      }
+    }
+
+    let streams: CodeStream[] = [];
+    for (let i = 0; i < 50; i++) {
+      streams.push(new CodeStream());
+    }
+
+    function animate() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      streams.forEach((stream, index) => {
+        stream.update();
+        stream.draw(ctx);
+
+        if (stream.isOffScreen()) {
+          streams[index] = new CodeStream();
+        }
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   return (
     <div
@@ -19,16 +131,30 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background: "#ffffff",
+        background: "#000000",
         padding: "0 16px",
         zIndex: 9999,
       }}
     >
+      <canvas
+        ref={canvasRef}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          zIndex: 1,
+        }}
+      />
+
       {/* Main content */}
       <div
         style={{
           textAlign: "center",
           maxWidth: 500,
+          position: "relative",
+          zIndex: 2,
         }}
       >
         <h2
@@ -37,7 +163,7 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
             fontWeight: 700,
             margin: "0 0 16px 0",
             letterSpacing: "0.02em",
-            color: "#000000",
+            color: "#ffffff",
           }}
         >
           CodeL
@@ -45,7 +171,7 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
         <p
           style={{
             fontSize: 18,
-            color: "#6b7280",
+            color: "#d1d5db",
             marginBottom: 48,
             lineHeight: 1.5,
           }}
