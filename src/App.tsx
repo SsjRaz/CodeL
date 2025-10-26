@@ -7,6 +7,8 @@ import { normalizeLines } from "./lib/utils";
 import { scoreGuess } from "./lib/scoring";
 import type { LineFeedback, Snippet } from "./types";
 
+//testing branch commits 
+
 import js from "react-syntax-highlighter/dist/esm/languages/hljs/javascript";
 import py from "react-syntax-highlighter/dist/esm/languages/hljs/python";
 import java from "react-syntax-highlighter/dist/esm/languages/hljs/java";
