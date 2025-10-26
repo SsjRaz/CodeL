@@ -1,0 +1,340 @@
+[
+  {
+    "id": 1,
+    "title": "Off-by-One Error in Loop",
+    "language": "javascript",
+    "difficulty": "easy",
+    "hint": "Check the loop condition carefully",
+    "buggyLines": [
+      "function sumArray(arr) {",
+      "  let sum = 0;",
+      "  for (let i = 0; i <= arr.length; i++) {",
+      "    sum += arr[i];",
+      "  }",
+      "  return sum;",
+      "}"
+    ],
+    "bugLineNumber": 3,
+    "fixedLines": [
+      "function sumArray(arr) {",
+      "  let sum = 0;",
+      "  for (let i = 0; i < arr.length; i++) {",
+      "    sum += arr[i];",
+      "  }",
+      "  return sum;",
+      "}"
+    ],
+    "explanation": "The loop condition uses '<=' instead of '<', causing an array index out of bounds error. Arrays are zero-indexed, so the last valid index is arr.length - 1."
+  },
+  {
+    "id": 2,
+    "title": "Missing Return Statement",
+    "language": "javascript",
+    "difficulty": "easy",
+    "hint": "Functions should return a value",
+    "buggyLines": [
+      "function multiply(a, b) {",
+      "  const result = a * b;",
+      "}"
+    ],
+    "bugLineNumber": 2,
+    "fixedLines": [
+      "function multiply(a, b) {",
+      "  return a * b;",
+      "}"
+    ],
+    "explanation": "The function calculates the result but doesn't return it. Without a return statement, the function returns undefined."
+  },
+  {
+    "id": 3,
+    "title": "Wrong Comparison Operator",
+    "language": "javascript",
+    "difficulty": "easy",
+    "hint": "Check the comparison operator for equality",
+    "buggyLines": [
+      "function isEqual(a, b) {",
+      "  if (a = b) {",
+      "    return true;",
+      "  }",
+      "  return false;",
+      "}"
+    ],
+    "bugLineNumber": 2,
+    "fixedLines": [
+      "function isEqual(a, b) {",
+      "  if (a === b) {",
+      "    return true;",
+      "  }",
+      "  return false;",
+      "}"
+    ],
+    "explanation": "Using '=' (assignment) instead of '===' (strict equality). This assigns b to a instead of comparing them."
+  },
+  {
+    "id": 4,
+    "title": "Incorrect Array Method",
+    "language": "javascript",
+    "difficulty": "medium",
+    "hint": "Check which array method modifies the original array",
+    "buggyLines": [
+      "function getFirstThree(arr) {",
+      "  arr.splice(0, 3);",
+      "  return arr;",
+      "}"
+    ],
+    "bugLineNumber": 2,
+    "fixedLines": [
+      "function getFirstThree(arr) {",
+      "  return arr.slice(0, 3);",
+      "}"
+    ],
+    "explanation": "splice() modifies the original array and removes elements, while slice() creates a copy. This function should use slice() to get the first three elements without modifying the original array."
+  },
+  {
+    "id": 5,
+    "title": "Missing Break in Switch",
+    "language": "javascript",
+    "difficulty": "medium",
+    "hint": "Switch cases need break statements",
+    "buggyLines": [
+      "function getDayType(day) {",
+      "  switch(day) {",
+      "    case 'Saturday':",
+      "    case 'Sunday':",
+      "      return 'weekend';",
+      "    case 'Monday':",
+      "      return 'start of week';",
+      "    default:",
+      "      return 'weekday';",
+      "  }",
+      "}"
+    ],
+    "bugLineNumber": 3,
+    "fixedLines": [
+      "function getDayType(day) {",
+      "  switch(day) {",
+      "    case 'Saturday':",
+      "    case 'Sunday':",
+      "      return 'weekend';",
+      "    case 'Monday':",
+      "    case 'Tuesday':",
+      "    case 'Wednesday':",
+      "    case 'Thursday':",
+      "    case 'Friday':",
+      "      return 'weekday';",
+      "    default:",
+      "      return 'unknown';",
+      "  }",
+      "}"
+    ],
+    "explanation": "While this code works, it's incomplete. The cases for Tuesday-Friday fall through to the default case. The pattern shown is correct (fall-through from Saturday to Sunday), but other weekdays need their cases too."
+  },
+  {
+    "id": 6,
+    "title": "Asynchronous Callback Issue",
+    "language": "javascript",
+    "difficulty": "hard",
+    "hint": "Loop variable in async callbacks",
+    "buggyLines": [
+      "function delayedPrint() {",
+      "  for (var i = 0; i < 3; i++) {",
+      "    setTimeout(() => console.log(i), 1000);",
+      "  }",
+      "}"
+    ],
+    "bugLineNumber": 2,
+    "fixedLines": [
+      "function delayedPrint() {",
+      "  for (let i = 0; i < 3; i++) {",
+      "    setTimeout(() => console.log(i), 1000);",
+      "  }",
+      "}"
+    ],
+    "explanation": "Using 'var' creates function scope, so all callbacks reference the same variable which will be 3 after the loop. Using 'let' creates block scope, giving each callback its own copy of i."
+  },
+  {
+    "id": 7,
+    "title": "Type Coercion Bug",
+    "language": "javascript",
+    "difficulty": "medium",
+    "hint": "String concatenation vs addition",
+    "buggyLines": [
+      "function addNumbers(a, b) {",
+      "  return a + b;",
+      "}"
+    ],
+    "bugLineNumber": 2,
+    "fixedLines": [
+      "function addNumbers(a, b) {",
+      "  return Number(a) + Number(b);",
+      "}"
+    ],
+    "explanation": "If a or b are strings, JavaScript will concatenate instead of adding. For example, addNumbers('5', 3) returns '53' instead of 8. Converting to numbers first ensures mathematical addition."
+  },
+  {
+    "id": 8,
+    "title": "Infinite Recursion",
+    "language": "javascript",
+    "difficulty": "medium",
+    "hint": "Check the base case condition",
+    "buggyLines": [
+      "function countdown(n) {",
+      "  if (n < 0) return;",
+      "  console.log(n);",
+      "  countdown(n - 1);",
+      "}"
+    ],
+    "bugLineNumber": 2,
+    "fixedLines": [
+      "function countdown(n) {",
+      "  if (n <= 0) return;",
+      "  console.log(n);",
+      "  countdown(n - 1);",
+      "}"
+    ],
+    "explanation": "The base case uses '<' instead of '<=', so when n reaches 0, it will print 0 and then call countdown(-1), countdown(-2), etc. forever. The base case should stop at or before 0."
+  },
+  {
+    "id": 9,
+    "title": "Array Mutation Bug",
+    "language": "javascript",
+    "difficulty": "medium",
+    "hint": "Some array methods mutate the original",
+    "buggyLines": [
+      "function reverseArray(arr) {",
+      "  return arr.reverse();",
+      "}"
+    ],
+    "bugLineNumber": 2,
+    "fixedLines": [
+      "function reverseArray(arr) {",
+      "  return [...arr].reverse();",
+      "}"
+    ],
+    "explanation": "The reverse() method mutates the original array. If you want to avoid side effects, create a copy first using the spread operator or slice()."
+  },
+  {
+    "id": 10,
+    "title": "Null Reference Error",
+    "language": "javascript",
+    "difficulty": "easy",
+    "hint": "Check for null or undefined before accessing properties",
+    "buggyLines": [
+      "function getUserName(user) {",
+      "  return user.name.toUpperCase();",
+      "}"
+    ],
+    "bugLineNumber": 2,
+    "fixedLines": [
+      "function getUserName(user) {",
+      "  return user?.name?.toUpperCase() || 'Unknown';",
+      "}"
+    ],
+    "explanation": "If user or user.name is null/undefined, this will throw an error. Use optional chaining (?.) and provide a default value to handle these cases."
+  },
+  {
+    "id": 11,
+    "title": "Wrong Array Index",
+    "language": "python",
+    "difficulty": "easy",
+    "hint": "Remember Python uses zero-based indexing",
+    "buggyLines": [
+      "def get_last_element(arr):",
+      "    return arr[len(arr)]"
+    ],
+    "bugLineNumber": 2,
+    "fixedLines": [
+      "def get_last_element(arr):",
+      "    return arr[-1]"
+    ],
+    "explanation": "arr[len(arr)] is out of bounds because arrays are zero-indexed. The last element is at index len(arr)-1, or more simply, arr[-1] in Python."
+  },
+  {
+    "id": 12,
+    "title": "Missing Else Condition",
+    "language": "javascript",
+    "difficulty": "easy",
+    "hint": "Function doesn't return in all code paths",
+    "buggyLines": [
+      "function isPositive(num) {",
+      "  if (num > 0) {",
+      "    return true;",
+      "  }",
+      "}"
+    ],
+    "bugLineNumber": 5,
+    "fixedLines": [
+      "function isPositive(num) {",
+      "  if (num > 0) {",
+      "    return true;",
+      "  }",
+      "  return false;",
+      "}"
+    ],
+    "explanation": "The function only returns true for positive numbers but returns undefined for non-positive numbers. It should explicitly return false."
+  },
+  {
+    "id": 13,
+    "title": "Incorrect String Comparison",
+    "language": "javascript",
+    "difficulty": "medium",
+    "hint": "Case sensitivity matters",
+    "buggyLines": [
+      "function hasWord(text, word) {",
+      "  return text.includes(word);",
+      "}"
+    ],
+    "bugLineNumber": 2,
+    "fixedLines": [
+      "function hasWord(text, word) {",
+      "  return text.toLowerCase().includes(word.toLowerCase());",
+      "}"
+    ],
+    "explanation": "String comparison is case-sensitive. 'Hello' and 'hello' are different. Convert both to lowercase (or uppercase) for case-insensitive comparison."
+  },
+  {
+    "id": 14,
+    "title": "Floating Point Precision",
+    "language": "javascript",
+    "difficulty": "hard",
+    "hint": "Floating point arithmetic isn't always exact",
+    "buggyLines": [
+      "function isEqual(a, b) {",
+      "  return a === b;",
+      "}"
+    ],
+    "bugLineNumber": 2,
+    "fixedLines": [
+      "function isEqual(a, b, epsilon = 0.0001) {",
+      "  return Math.abs(a - b) < epsilon;",
+      "}"
+    ],
+    "explanation": "Due to floating point precision issues, 0.1 + 0.2 !== 0.3 in JavaScript. For comparing decimals, check if the difference is smaller than a small threshold (epsilon)."
+  },
+  {
+    "id": 15,
+    "title": "Missing Closing Bracket",
+    "language": "javascript",
+    "difficulty": "easy",
+    "hint": "Count your brackets!",
+    "buggyLines": [
+      "function calculate(x, y) {",
+      "  if (x > y) {",
+      "    return x * y;",
+      "  } else {",
+      "    return x + y;",
+      "}"
+    ],
+    "bugLineNumber": 6,
+    "fixedLines": [
+      "function calculate(x, y) {",
+      "  if (x > y) {",
+      "    return x * y;",
+      "  } else {",
+      "    return x + y;",
+      "  }",
+      "}"
+    ],
+    "explanation": "The function is missing the closing bracket. Every opening bracket needs a corresponding closing bracket."
+  }
+]
