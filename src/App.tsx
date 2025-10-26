@@ -1,6 +1,6 @@
 // src/App.tsx
 import { useState } from "react";
-import SyntaxHighlighter from "react-syntax-highlighter/dist/esm/hljs/light";
+import { LightAsync as SyntaxHighlighter } from "react-syntax-highlighter";
 import clsx from "classnames";
 import snippets from "./data/snippets.json";
 import { normalizeLines } from "./lib/utils";
