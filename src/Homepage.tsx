@@ -96,7 +96,6 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
 
     function animate() {
       ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       streams.forEach((stream, index) => {
         stream.update();
@@ -178,213 +177,13 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
           zIndex: 2,
         }}
       >
-{/* Animated Code Logo */}
-<div
-  style={{
-    display: "flex",
-    gap: 8,
-    justifyContent: "center",
-    marginBottom: 24,
-  }}
->
-  {/* Box 1 - Green */}
-  <div
-    style={{
-      width: 62,
-      height: 62,
-      border: "2px solid #22c55e",
-      borderRadius: 4,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      overflow: "hidden",
-      position: "relative",
-      background: "rgba(34,197,94,0.1)",
-    }}
-  >
-    <div
-      style={{
-        fontFamily: "monospace",
-        fontSize: 10,
-        color: "#22c55e",
-        animation: "scroll1 8s linear infinite",
-        whiteSpace: "pre",
-        lineHeight: 1.4,
-      }}
-    >
-      {`if(x>0)\n  y++;\nfor(i)\n  sum\nlet a\nconst\nreturn\n{x:1}\nwhile\nif(x>0)\n  y++;\nfor(i)\n  sum\nlet a\nconst\nreturn\n{x:1}\nwhile`}
-    </div>
-  </div>
-
-  {/* Box 2 - Yellow */}
-  <div
-    style={{
-      width: 62,
-      height: 62,
-      border: "2px solid #eab308",
-      borderRadius: 4,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      overflow: "hidden",
-      position: "relative",
-      background: "rgba(234,179,8,0.1)",
-    }}
-  >
-    <div
-      style={{
-        fontFamily: "monospace",
-        fontSize: 10,
-        color: "#eab308",
-        animation: "scroll2 7s linear infinite",
-        whiteSpace: "pre",
-        lineHeight: 1.4,
-      }}
-    >
-      {`def fn\n  =>x\nvar z\nfn(a)\nmap()\nelse\ntry{}\n!==\npush\ndef fn\n  =>x\nvar z\nfn(a)\nmap()\nelse\ntry{}\n!==\npush`}
-    </div>
-  </div>
-
-  {/* Box 3 - Green */}
-  <div
-    style={{
-      width: 62,
-      height: 62,
-      border: "2px solid #22c55e",
-      borderRadius: 4,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      overflow: "hidden",
-      position: "relative",
-      background: "rgba(34,197,94,0.1)",
-    }}
-  >
-    <div
-      style={{
-        fontFamily: "monospace",
-        fontSize: 10,
-        color: "#22c55e",
-        animation: "scroll3 6.5s linear infinite",
-        whiteSpace: "pre",
-        lineHeight: 1.4,
-      }}
-    >
-      {`arr[i]\n++i\nelse{\n  len\ncatch\nimport\nexport\nawait\nasync\narr[i]\n++i\nelse{\n  len\ncatch\nimport\nexport\nawait\nasync`}
-    </div>
-  </div>
-
-  {/* Box 4 - Yellow */}
-  <div
-    style={{
-      width: 62,
-      height: 62,
-      border: "2px solid #eab308",
-      borderRadius: 4,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      overflow: "hidden",
-      position: "relative",
-      background: "rgba(234,179,8,0.1)",
-    }}
-  >
-    <div
-      style={{
-        fontFamily: "monospace",
-        fontSize: 10,
-        color: "#eab308",
-        animation: "scroll4 7.5s linear infinite",
-        whiteSpace: "pre",
-        lineHeight: 1.4,
-      }}
-    >
-      {`{key}\nconst\ntry{}\n!=\nlen()\nclass\nnull\nfind\nsome\n{key}\nconst\ntry{}\n!=\nlen()\nclass\nnull\nfind\nsome`}
-    </div>
-  </div>
-
-  {/* Box 5 - Green */}
-  <div
-    style={{
-      width: 62,
-      height: 62,
-      border: "2px solid #22c55e",
-      borderRadius: 4,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      overflow: "hidden",
-      position: "relative",
-      background: "rgba(34,197,94,0.1)",
-    }}
-  >
-    <div
-      style={{
-        fontFamily: "monospace",
-        fontSize: 10,
-        color: "#22c55e",
-        animation: "scroll5 6s linear infinite",
-        whiteSpace: "pre",
-        lineHeight: 1.4,
-      }}
-    >
-      {`class{\n  this\n  new\n()=>\npush()\nfilter\nreduce\nbreak\nclass{\n  this\n  new\n()=>\npush()\nfilter\nreduce\nbreak`}
-    </div>
-  </div>
-</div>
-
-{/* Add CSS animations for the logo boxes */}
-<style>{`
-  @keyframes scroll1 { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
-  @keyframes scroll2 { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
-  @keyframes scroll3 { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
-  @keyframes scroll4 { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
-  @keyframes scroll5 { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
-`}</style>
-
-{/* Rolling CodeL tiles (your original section) */}
-<div
-  style={{
-    display: "flex",
-    gap: 12,
-    marginBottom: 24,
-    justifyContent: "center",
-  }}
->
-  {targetLetters.map((letter, index) => (
-    <div
-      key={index}
-      style={{
-        width: 80,
-        height: 100,
-        border: "3px solid #ffffff",
-        borderRadius: 8,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0, 0, 0, 0.7)",
-        boxShadow:
-          "0 0 20px rgba(255, 255, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.1)",
-        overflow: "hidden",
-        position: "relative",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 56,
-          fontWeight: 700,
-          color: "#ffffff",
-          textShadow: "0 0 10px rgba(255, 255, 255, 0.8)",
-          fontFamily: "monospace",
-        }}
-      >
-        {showRandomChar[index]
-          ? allChars[Math.floor(rollingOffsets[index]) % allChars.length]
-          : letter}
-      </div>
-    </div>
-  ))}
-</div>
+        {/* Rolling CodeL tiles (your original section) */}
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            marginBottom: 24,
+            justifyContent: "center",
           }}
         >
           {targetLetters.map((letter, index) => (
@@ -399,7 +198,8 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
                 alignItems: "center",
                 justifyContent: "center",
                 background: "rgba(0, 0, 0, 0.7)",
-                boxShadow: "0 0 20px rgba(255, 255, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.1)",
+                boxShadow:
+                  "0 0 20px rgba(255, 255, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.1)",
                 overflow: "hidden",
                 position: "relative",
               }}
@@ -413,7 +213,9 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
                   fontFamily: "monospace",
                 }}
               >
-                {showRandomChar[index] ? allChars[Math.floor(rollingOffsets[index]) % allChars.length] : letter}
+                {showRandomChar[index]
+                  ? allChars[Math.floor(rollingOffsets[index]) % allChars.length]
+                  : letter}
               </div>
             </div>
           ))}
@@ -517,7 +319,8 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
                   fontFamily: "monospace",
                 }}
                 onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)")
+                  (e.currentTarget.style.background =
+                    "rgba(255, 255, 255, 0.1)")
                 }
                 onMouseLeave={(e) =>
                   (e.currentTarget.style.background = "#000000")
@@ -541,7 +344,8 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
                   fontFamily: "monospace",
                 }}
                 onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)")
+                  (e.currentTarget.style.background =
+                    "rgba(255, 255, 255, 0.1)")
                 }
                 onMouseLeave={(e) =>
                   (e.currentTarget.style.background = "#000000")
