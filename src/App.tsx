@@ -1,11 +1,23 @@
 // src/App.tsx
 import { useState } from "react";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import SyntaxHighlighter from "react-syntax-highlighter/dist/esm/hljs/light";
 import clsx from "classnames";
 import snippets from "./data/snippets.json";
 import { normalizeLines } from "./lib/utils";
-import { scoreGuess, type LineFeedback } from "./lib/scoring";
-import type { Snippet } from "./types";
+import { scoreGuess } from "./lib/scoring";
+import type { LineFeedback, Snippet } from "./types";
+
+import js from "react-syntax-highlighter/dist/esm/languages/hljs/javascript";
+import py from "react-syntax-highlighter/dist/esm/languages/hljs/python";
+import java from "react-syntax-highlighter/dist/esm/languages/hljs/java";
+import cpp from "react-syntax-highlighter/dist/esm/languages/hljs/cpp";
+import ts from "react-syntax-highlighter/dist/esm/languages/hljs/typescript";
+
+SyntaxHighlighter.registerLanguage("javascript", js);
+SyntaxHighlighter.registerLanguage("python", py);
+SyntaxHighlighter.registerLanguage("java", java);
+SyntaxHighlighter.registerLanguage("cpp", cpp);
+SyntaxHighlighter.registerLanguage("typescript", ts);
 
 const MAX_TRIES = 6;
 
