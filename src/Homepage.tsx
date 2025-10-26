@@ -6,7 +6,12 @@ interface HomepageProps {
 
 export default function Homepage({ onSelectMode }: HomepageProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [rollingOffsets, setRollingOffsets] = useState([0, 0, 0, 0, 0]);
+  const [showRandomChar, setShowRandomChar] = useState([false, false, false, false, false]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const targetLetters = ['C', 'o', 'd', 'e', 'L'];
+  const allChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -119,6 +124,21 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
     };
   }, []);
 
+  // Rolling letters animation - trigger random character
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRollingOffsets(prev => prev.map(() => Math.random() * allChars.length));
+      setShowRandomChar(prev => prev.map(() => Math.random() > 0.90));
+      
+      // Reset back to original letters after 100ms
+      setTimeout(() => {
+        setShowRandomChar([false, false, false, false, false]);
+      }, 100);
+    }, 800);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div
       style={{
@@ -152,28 +172,60 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
       <div
         style={{
           textAlign: "center",
-          maxWidth: 500,
+          maxWidth: 600,
           position: "relative",
           zIndex: 2,
         }}
       >
-        <h2
+        {/* Rolling letter boxes */}
+        <div
           style={{
-            fontSize: 48,
-            fontWeight: 700,
-            margin: "0 0 16px 0",
-            letterSpacing: "0.02em",
-            color: "#ffffff",
+            display: "flex",
+            gap: 12,
+            marginBottom: 24,
+            justifyContent: "center",
           }}
         >
-          CodeL
-        </h2>
+          {targetLetters.map((letter, index) => (
+            <div
+              key={index}
+              style={{
+                width: 80,
+                height: 100,
+                border: "3px solid #ffffff",
+                borderRadius: 8,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "rgba(0, 0, 0, 0.7)",
+                boxShadow: "0 0 20px rgba(255, 255, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.1)",
+                overflow: "hidden",
+                position: "relative",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 56,
+                  fontWeight: 700,
+                  color: "#ffffff",
+                  textShadow: "0 0 10px rgba(255, 255, 255, 0.8)",
+                  fontFamily: "monospace",
+                }}
+              >
+                {showRandomChar[index] ? allChars[Math.floor(rollingOffsets[index]) % allChars.length] : letter}
+              </div>
+            </div>
+          ))}
+        </div>
+
         <p
           style={{
             fontSize: 18,
-            color: "#d1d5db",
+            color: "#ffffff",
             marginBottom: 48,
             lineHeight: 1.5,
+            fontFamily: "monospace",
+            textShadow: "0 0 5px rgba(255, 255, 255, 0.5)",
           }}
         >
           A coding puzzle game inspired by Wordle
@@ -184,29 +236,33 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             style={{
-              background: "#6aaa64",
-              color: "white",
-              border: "none",
+              background: "#ffffff",
+              color: "#000000",
+              border: "2px solid #ffffff",
               borderRadius: 4,
               padding: "16px 48px",
               fontSize: 18,
               fontWeight: 700,
               cursor: "pointer",
-              transition: "background 0.2s",
+              transition: "all 0.2s",
               minWidth: 200,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: 8,
+              fontFamily: "monospace",
+              boxShadow: "0 0 15px rgba(255, 255, 255, 0.5)",
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background = "#5a9a54")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = "#6aaa64")
-            }
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#000000";
+              e.currentTarget.style.color = "#ffffff";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#ffffff";
+              e.currentTarget.style.color = "#000000";
+            }}
           >
-            Play
+            PLAY
             <svg
               width="12"
               height="8"
@@ -219,7 +275,7 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
             >
               <path
                 d="M1 1L6 6L11 1"
-                stroke="white"
+                stroke="currentColor"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -235,10 +291,10 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
                 top: "calc(100% + 8px)",
                 left: 0,
                 right: 0,
-                background: "white",
-                border: "1px solid #d3d6da",
+                background: "#000000",
+                border: "2px solid #ffffff",
                 borderRadius: 4,
-                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                boxShadow: "0 0 20px rgba(255, 255, 255, 0.3)",
                 overflow: "hidden",
                 zIndex: 10,
               }}
@@ -248,21 +304,22 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
                 style={{
                   width: "100%",
                   padding: "16px 24px",
-                  background: "white",
+                  background: "#000000",
                   border: "none",
-                  borderBottom: "1px solid #d3d6da",
+                  borderBottom: "1px solid #ffffff",
                   fontSize: 16,
                   fontWeight: 600,
                   cursor: "pointer",
                   textAlign: "left",
                   transition: "background 0.2s",
-                  color: "#000000",
+                  color: "#ffffff",
+                  fontFamily: "monospace",
                 }}
                 onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "#f3f4f6")
+                  (e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)")
                 }
                 onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "white")
+                  (e.currentTarget.style.background = "#000000")
                 }
               >
                 🐛 Find the Bug
@@ -272,20 +329,21 @@ export default function Homepage({ onSelectMode }: HomepageProps) {
                 style={{
                   width: "100%",
                   padding: "16px 24px",
-                  background: "white",
+                  background: "#000000",
                   border: "none",
                   fontSize: 16,
                   fontWeight: 600,
                   cursor: "pointer",
                   textAlign: "left",
                   transition: "background 0.2s",
-                  color: "#000000",
+                  color: "#ffffff",
+                  fontFamily: "monospace",
                 }}
                 onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "#f3f4f6")
+                  (e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)")
                 }
                 onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "white")
+                  (e.currentTarget.style.background = "#000000")
                 }
               >
                 ✨ Complete the Code
