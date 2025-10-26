@@ -6,8 +6,7 @@ import snippets from "./data/snippets.json";
 import { normalizeLines } from "./lib/utils";
 import { scoreGuess } from "./lib/scoring";
 import type { LineFeedback, Snippet } from "./types";
-
-//testing branch commits 
+import Homepage from "./Homepage";
 
 import js from "react-syntax-highlighter/dist/esm/languages/hljs/javascript";
 import py from "react-syntax-highlighter/dist/esm/languages/hljs/python";
@@ -24,12 +23,14 @@ SyntaxHighlighter.registerLanguage("typescript", ts);
 const MAX_TRIES = 6;
 
 export default function App() {
-  // For MVP, always pick the first snippet. Later: pick by daily seed or mode.
-  const target: Snippet = (snippets as Snippet[])[0];
-
+  // ALL useState hooks MUST be at the top before any conditions
+  const [gameMode, setGameMode] = useState<"bug" | "complete" | null>(null);
   const [input, setInput] = useState("");
   const [guesses, setGuesses] = useState<string[]>([]);
   const [allFeedback, setAllFeedback] = useState<LineFeedback[][]>([]);
+
+  // For MVP, always pick the first snippet. Later: pick by daily seed or mode.
+  const target: Snippet = (snippets as Snippet[])[0];
 
   const lastFb = allFeedback.at(-1);
   const lastWasAllCorrect =
@@ -39,7 +40,7 @@ export default function App() {
   const gameOver = guesses.length >= MAX_TRIES || lastWasAllCorrect;
   const won =
     lastWasAllCorrect &&
-    // also require same length to avoid “all correct subset” edge case
+    // also require same length to avoid "all correct subset" edge case
     (guesses.length > 0 &&
       normalizeLines(guesses[guesses.length - 1]).length ===
         target.lines.length);
@@ -55,6 +56,11 @@ export default function App() {
     setGuesses((prev) => [...prev, input]);
     setAllFeedback((prev) => [...prev, fb]);
     setInput("");
+  }
+
+  // Show homepage if no mode selected - AFTER all hooks
+  if (!gameMode) {
+    return <Homepage onSelectMode={setGameMode} />;
   }
 
   return (
@@ -217,4 +223,3 @@ function CodeBoard({ feedback }: { feedback: LineFeedback[] }) {
     </div>
   );
 }
-
