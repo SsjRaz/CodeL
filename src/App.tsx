@@ -548,6 +548,46 @@ export default function App() {
             <p style={{ color: palette.textMuted, margin: 0 }}>
               Find the buggy line in <strong>{MAX_TRIES}</strong> tries. Identify which line contains the bug and fix it directly below.
             </p>
+            {!!bugSnippet && (
+              <div
+                style={{
+                  display: "grid",
+                  gap: 8,
+                  borderRadius: 10,
+                  border: `1px solid ${palette.border}`,
+                  background: isDarkMode ? "rgba(15,23,42,0.6)" : palette.codeBackground,
+                  padding: 12,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: palette.textMuted,
+                  }}
+                >
+                  Buggy implementation
+                </div>
+                <SyntaxHighlighter
+                  language={bugSnippet.language}
+                  wrapLongLines
+                  customStyle={{
+                    margin: 0,
+                    background: "transparent",
+                    padding: 0,
+                    fontSize: 12,
+                    color: palette.textPrimary,
+                  }}
+                  codeTagProps={{
+                    style: {
+                      color: palette.textPrimary,
+                    },
+                  }}
+                >
+                  {bugSnippet.buggyLines.join("\n")}
+                </SyntaxHighlighter>
+              </div>
+            )}
           </div>
 
           <div
