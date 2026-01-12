@@ -1,73 +1,24 @@
-# React + TypeScript + Vite
+# CodeL – A Wordle-Style Coding Game
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**CodeL** is a web-based, interactive coding game that gamifies programming practice using a Wordle-inspired feedback system. The platform allows users to solve coding challenges through iterative guesses, receiving real-time feedback that reinforces logical thinking and problem-solving skills.
 
-Currently, two official plugins are available:
+## 🎮 How the Game Works
+- Players are presented with a coding challenge focused on logic, syntax, or expected output
+- Each submission is evaluated and returns structured feedback (correct, partially correct, incorrect)
+- Users refine their solutions over multiple attempts, mirroring Wordle’s guess-and-feedback loop
+- The game encourages incremental learning, debugging, and pattern recognition
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🌐 Platform Features
+- Interactive web interface with fast feedback and smooth gameplay
+- Responsive UI optimized for both desktop and mobile
+- Modular challenge architecture allowing new problems to be added easily
+- Clean, minimal design focused on usability and learning efficiency
 
-## React Compiler
+## 🛠️ Tech Stack
+- **Frontend:** React.js, TypeScript
+- **Build Tooling:** Vite
+- **Styling:** CSS
+- **Code Quality:** ESLint
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🎯 Purpose
+CodeL was built to make learning and practicing programming more engaging by turning problem-solving into a game. It is designed for students, beginners, and anyone looking to sharpen their coding intuition in a low-pressure, interactive environment.
